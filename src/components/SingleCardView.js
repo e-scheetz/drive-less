@@ -173,13 +173,13 @@ class singleCardView extends Component {
         {/* Modal for selecting places */}
         <Modal
           animationType="slide"
-          transparent={true}
+          transparent={false}
           visible={this.state.locationModal}
           onRequestClose={() => {
             Alert.alert('Modal has been closed.');
           }}>
             <MapView
-              style={{ flex: 1 }}
+              style={{ alignSelf: 'stretch', height: 300, marginTop: 380 }}
               initialRegion={{
                 latitude: 37.78825,
                 longitude: -122.4324,
@@ -189,10 +189,10 @@ class singleCardView extends Component {
             />
             <Footer>
               <Left></Left>
-              <Body>
-                <Button style={{align: 'center'}} transparent onPress={() => {this.closeLocModal();}}><Text>Accept</Text></Button>
-              </Body>
-              <Right></Right>
+              <Body></Body>
+              <Right>
+                <Button large style={{align: 'center'}} transparent onPress={() => {this.closeLocModal();}}><Text>Accept</Text></Button>
+              </Right>
             </Footer>
         </Modal>
       </View>
