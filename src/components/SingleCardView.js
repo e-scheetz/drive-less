@@ -1,7 +1,17 @@
 import React, { Component } from 'react'
 import { DatePickerIOS, Modal, TouchableHighlight, View, Alert } from 'react-native'
-import { Footer, Item, Subtitle, Form, Button, Label, Input, DatePicker, Left, Right, Text, Body, Icon, Textarea } from 'native-base';
-import { MapView } from 'expo'
+import { ListView, Footer, Item, Subtitle, Form, Button, Label, Input, DatePicker, Left, Right, Text, Body, Icon, Textarea } from 'native-base';
+import Expo, { MapView, Constants, PROVIDER_GOOGLE, Location, Marker, AnimatedRegion } from 'expo'
+import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+
+const homePlace = {
+  description: 'Home',
+  geometry: { location: { lat: 48.8152937, lng: 2.4597668 } },
+};
+const workPlace = {
+  description: 'Work',
+  geometry: { location: { lat: 48.8496818, lng: 2.2940881 } },
+};
 
 
 class singleCardView extends Component {
@@ -28,7 +38,31 @@ class singleCardView extends Component {
         date: '',
         modifying: ''
       },
-      locationModal: false
+      locationModal: false,
+      coordinate: new AnimatedRegion({
+        latitude: 40.0166,
+        longitude: 105.2817,
+      }),
+    }
+  }
+
+  componentWillReceiveProps(nextProps) {
+    const duration = 500
+  
+    if (this.props.coordinate !== nextProps.coordinate) {
+      if (Platform.OS === 'android') {
+        if (this.marker) {
+          this.marker._component.animateMarkerToCoordinate(
+            nextProps.coordinate,
+            duration
+          );
+        }
+      } else {
+        this.state.coordinate.timing({
+          ...nextProps.coordinate,
+          duration
+        }).start();
+      }
     }
   }
 
@@ -104,6 +138,15 @@ class singleCardView extends Component {
     })
   }
 
+  onLocationPressHandler(){
+    if(this.state.location.length > 2){
+      this.setState({
+        ...this.state,
+        locationModal: true
+      })
+    }
+  }
+
   closeLocModal(){
     this.setState({
       ...this.state,
@@ -111,7 +154,22 @@ class singleCardView extends Component {
     })
   }
 
+  async getCoordinates(addressStr){
+    const coordinates = await Location.geocodeAsync(addressStr)
+    const animRe = new AnimatedRegion(coordinates)
+    this.setState({
+      ...this.state,
+      coordinates: animRe
+    })
+  }
+
   render() {
+    const api = "AIzaSyCIY1cpGcTYjFi68q8yYO1Y0Lj2MecDG_w"
+    // const homePlace = { description: 'Home', geometry: { location: { lat: 48.8152937, lng: 2.4597668 } }};
+    // const workPlace = { description: 'Work', geometry: { location: { lat: 48.8496818, lng: 2.2940881 } }};
+    const windowSize = require('Dimensions').get('window')
+    const deviceWidth = windowSize.width;
+    const deviceHeight = windowSize.height;
     return (
       <View>
         <Form>
@@ -119,7 +177,7 @@ class singleCardView extends Component {
             <Label>Title</Label>
             <Input onChangeText={this.onTitleChangeHandler} value={this.state.title} />
           </Item>
-          <Item style={{height: 60}}>
+          <Item style={{height: 60}} onPress={()=>this.onLocationPressHandler()} >
             <Label>Location</Label>
             <Input onChangeText={this.onLocationChangeHandler} value={this.state.location} />
           </Item>
@@ -172,12 +230,72 @@ class singleCardView extends Component {
         </Modal>
         {/* Modal for selecting places */}
         <Modal
+          style={{ flex: 1 }}
           animationType="slide"
           transparent={false}
           visible={this.state.locationModal}
           onRequestClose={() => {
             Alert.alert('Modal has been closed.');
           }}>
+            {/* Expo.Constants.manifest.ios.config.googleMapsApiKey */}
+            <View style={{ paddingTop: Constants.statusBarHeight, flex: 1 }}>
+              <GooglePlacesAutocomplete
+                provider={PROVIDER_GOOGLE}
+                placeholder="Search"
+                minLength={2} // minimum length of text to search
+                autoFocus={false}
+                returnKeyType={'search'} // Can be left out for default return key https://facebook.github.io/react-native/docs/textinput.html#returnkeytype
+                listViewDisplayed={true} // true/false/undefined
+                fetchDetails={false}
+                renderDescription={row => row.description} // custom description render
+                onPress={(data, details = null) => {
+                  console.log(data);
+                  console.log(details)
+                  this.onLocationChangeHandler(data.description)
+                  this.getCoordinates(data.description)
+                }}
+                getDefaultValue={() => {
+                  return this.state.location; // text input default value
+                }}
+                query={{
+                  // available options: https://developers.google.com/places/web-service/autocomplete
+                  key: api,
+                  language: 'en', // language of the results
+                  types: 'geocode', // default: 'geocode'
+                }}
+                styles={{
+                  description: {
+                    fontWeight: 'bold',
+                  },
+                  predefinedPlacesDescription: {
+                    color: '#1faadb',
+                  },
+                  listView: {
+                    paddingTop: Constants.statusBarHeight,
+                    position: "absolute",
+                    height: deviceHeight+Constants.statusBarHeight,
+                    width: deviceWidth
+                  },
+                }}
+                currentLocation={false} // Will add a 'Current location' button at the top of the predefined places list
+                currentLocationLabel="Current location"
+                nearbyPlacesAPI="GooglePlacesSearch" // Which API to use: GoogleReverseGeocoding or GooglePlacesSearch
+                GoogleReverseGeocodingQuery={{
+                  // available options for GoogleReverseGeocoding API : https://developers.google.com/maps/documentation/geocoding/intro
+                }}
+                GooglePlacesSearchQuery={{
+                  // available options for GooglePlacesSearch API : https://developers.google.com/places/web-service/search
+                  rankby: 'distance',
+                  types: 'food',
+                }}
+                filterReverseGeocodingByTypes={[
+                  'locality',
+                  'administrative_area_level_3',
+                ]} // filter the reverse geocoding results by types - ['locality', 'administrative_area_level_3'] if you want to display only cities
+                // predefinedPlaces={[homePlace, workPlace]}
+                debounce={200}
+              />
+            </View>
             <MapView
               style={{ alignSelf: 'stretch', height: 300, marginTop: 380 }}
               initialRegion={{
@@ -186,7 +304,15 @@ class singleCardView extends Component {
                 latitudeDelta: 0.0922,
                 longitudeDelta: 0.0421,
               }}
-            />
+            >
+              {this.state.coordinates
+                ? <MapView.Marker.Animated
+                    ref={marker => { this.marker = marker }}
+                    coordinate={this.state.coordinate}
+                  />
+                : null
+              }
+            </MapView>
             <Footer>
               <Left></Left>
               <Body></Body>

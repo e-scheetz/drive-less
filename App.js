@@ -1,5 +1,5 @@
 import React from 'react';
-import { Permissions, Calendar, Notifications } from 'expo'
+import { Permissions, Calendar, Notifications, Location } from 'expo'
 import { StyleSheet, Text, View } from 'react-native';
 import { Root, Container, Header, Content, Footer } from 'native-base'
 
@@ -30,6 +30,8 @@ export default class App extends React.Component {
   async reqPerms(){
     await Permissions.askAsync('calendar')
     await Permissions.askAsync('notifications')
+    await Permissions.askAsync('location')
+    await Location.requestPermissionsAsync()
   }
   async checkPerms(){
     const { status, permissions } = await Permissions.getAsync(Permissions.CALENDAR, Permissions.NOTIFICATIONS);
