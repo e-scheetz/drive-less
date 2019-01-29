@@ -6,6 +6,7 @@ import { Root, Container, Header, Content, Footer } from 'native-base'
 import HeaderBar from './src/components/HeaderBar.js'
 import FooterBar from './src/components/FooterBar.js'
 import CalendarList from './src/components/CalendarList.js'
+import SingleCardView from './src/components/SingleCardView.js'
 
 export default class App extends React.Component {
   constructor(props) {
@@ -14,7 +15,8 @@ export default class App extends React.Component {
       calendarsList: [],
       calendarIndex: [],
       events: [],
-      weekViewed: {}
+      weekViewed: {},
+      singleCardView: false
     }
   }
 
@@ -43,6 +45,7 @@ export default class App extends React.Component {
       newState.calendarsIndex[idx] = {title: cal.title, id: cal.id}
     })
     this.setState({
+        ...this.state,
       calendarsList: newState.calendarsList,
       calendarIndex: newState.calendarsIndex
     })
@@ -55,28 +58,42 @@ export default class App extends React.Component {
     end.setDate(end.getDate() + 7)
     const events = await Calendar.getEventsAsync(this.state.calendarsList, day, end)
     this.setState({
+        ...this.state,
       events: events,
       weekViewed: {begin:day,end:end}
     })
   }
 
-  setSingleCard(event){
-    
+  // added a function 'back' that returns the app to the main 'week of' screen
+  back(){
+    this.setSingleCard()
+  }
+
+  setSingleCard(calEvent){
+    if(calEvent){
+      this.setState({
+        ...this.state,
+        singleCardView: calEvent
+      })
+    }else{
+      this.setState({
+        ...this.state,
+        singleCardView: false
+      })
+    }
   }
 
   render() {
     return (
       <Root>
         <Container>
-          <Header>
-            <HeaderBar />
-          </Header>
+          <HeaderBar singleCardView={this.state.singleCardView} back={this.back.bind(this)} />
           <Content>
-            <CalendarList events={this.state.events} weekof={this.state.weekViewed} />
+            {this.state.singleCardView
+              ? <SingleCardView card={this.state.singleCardView}/>
+              : <CalendarList events={this.state.events} weekof={this.state.weekViewed} setSingleCardView={this.setSingleCard.bind(this)} /> }
           </Content>
-          <Footer>
-            <FooterBar />
-          </Footer>
+          <FooterBar />
         </Container>
       </Root>
     );

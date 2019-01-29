@@ -1,12 +1,25 @@
 import React, { Component } from 'react'
-import { Body, Title } from 'native-base';
+import { Header, Body, Title, Left, Right, Button, Icon } from 'native-base';
 
 class HeaderBar extends Component {
   render() {
     return (
-      <Body>
-        <Title>Drive Less</Title>
-      </Body>
+      <Header>
+        <Left>
+          {this.props.singleCardView
+            ? <Button onPress={()=>this.props.back()} transparent>
+                <Icon name='arrow-back' />
+              </Button>
+            : <Button onPress={()=>this.props.back()} transparent>
+              </Button> }
+        </Left>
+        <Body>
+          <Title>Drive Less</Title>
+        </Body>
+        <Right>
+
+        </Right>
+      </Header>
     );
   }
 }

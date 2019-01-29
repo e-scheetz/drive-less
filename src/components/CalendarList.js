@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { List, ListItem, Row, Text, Left, Right, Icon, Title, Subtitle, Card } from 'native-base';
+import { List, ListItem, Row, Text, Left, Right, Icon, Title, Subtitle, Card, Button } from 'native-base';
 
 
 class CalendarList extends Component {
@@ -40,7 +40,9 @@ class CalendarList extends Component {
                 </Row>
               </Left>
               <Right>
-                <Icon name="arrow-forward" />
+                <Button onPress={()=>this.props.setSingleCardView(event)} transparent>
+                  <Icon name="arrow-forward" />
+                </Button>
               </Right>
             </ListItem>
           </Card>
