@@ -8,13 +8,13 @@ class FooterBar extends Component {
       <Footer>
         <FooterTab>
           <Right>
-            <Text># hrs</Text>
+            <Text>{this.props.duration}</Text>
           </Right>
           <Body>
             <Title>Drive Less</Title>
           </Body>
           <Left>
-            <Button><Text>opt</Text></Button>
+            <Button onPress={()=>this.props.open()}><Text>opt</Text></Button>
           </Left>
         </FooterTab>
       </Footer>
