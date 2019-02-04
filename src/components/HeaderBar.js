@@ -17,7 +17,9 @@ class HeaderBar extends Component {
           <Title>Drive Less</Title>
         </Body>
         <Right>
-
+          <Button onPress={()=>this.props.options()} transparent>
+            <Icon name='ios-options' />
+          </Button>
         </Right>
       </Header>
     );

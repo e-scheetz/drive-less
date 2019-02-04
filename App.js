@@ -1,11 +1,14 @@
 import React from 'react';
 import { Permissions, Calendar, Notifications, Location } from 'expo'
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, AsyncStorage } from 'react-native';
 import { Root, Container, Header, Content, Footer } from 'native-base'
 
 import HeaderBar from './src/components/HeaderBar.js'
 import CalendarList from './src/components/CalendarList.js'
 import SingleCardView from './src/components/SingleCardView.js'
+
+import Overview from './src/components/modals/Overview.js'
+import GoogleAddressAutocomplete from './src/components/modals/GoogleAddressAutocomplete.js'
 
 export default class App extends React.Component {
   constructor(props) {
@@ -16,9 +19,19 @@ export default class App extends React.Component {
       events: [],
       weekViewed: {},
       singleCardView: false,
-      home: '15101 Lantana Drive Broomfield CO 80023',
+      home: '',
       api: "AIzaSyCIY1cpGcTYjFi68q8yYO1Y0Lj2MecDG_w",
-      optModal: false
+      optModal: false,
+      optionsModal: {
+        visible: false,
+        homeAutocomplete: {
+          visible: false
+        },
+      },
+      switch: {
+        status: false,
+        value: false,
+      }
     }
   }
 
@@ -27,13 +40,13 @@ export default class App extends React.Component {
     await this.checkPerms()
     await this.getCalIds()
     await this.getEvents()
+    await this.retrieveHome()
   }
 
   async reqPerms(){
     await Permissions.askAsync('calendar')
     await Permissions.askAsync('notifications')
     await Permissions.askAsync('location')
-    await Permissions.askAsync('contacts')
     await Location.requestPermissionsAsync()
   }
   async checkPerms(){
@@ -98,23 +111,75 @@ export default class App extends React.Component {
     // return apiCallResponse
     return url
   }
+
+  // this function needs updating when allowing user to enter their home / work addresses
   getFirstPreviousAddress(id){
     const event = this.state.events.filter((event)=>event.id===id)[0]
     const idx = this.state.events.indexOf(event)
     for(let i = idx; i > -1; i--){
+      // checks each event for a location
       if(this.state.events[i].location !== ''){
-        return this.state.home
-        // return this.state.events[i].location
+        // checks location is not the same as itself
+        if(this.state.events[i].location == event.location){
+          // if location is itself, return home, clear switch
+          this.clearSwitch()
+          return this.state.home
+        }else{
+          // if location is not itself
+          if(this.state.switch.status === false){
+            // if switch is off, turn on the switch
+            // this.addSwitch()
+          }
+          if(this.state.switch.value){
+            // if switch.value is true, return home
+            return this.state.home
+          }else{
+            // else return last location
+            // return this.state.events[i].location
+            return this.state.home
+          }
+        }
       }else if(i===0){
+        this.clearSwitch()
         return this.state.home
       }
     }
   }
+  
+  clearSwitch(){
+    this.setState({
+      ...this.state,
+      switch: {
+        status: false,
+        value: false,
+      }
+    })
+  }
+  addSwitch(){
+    this.setState({
+      ...this.state,
+      switch: {
+        status: true,
+        value: false,
+      }
+    })
+  }
+  flickSwitch(){
+    this.setState({
+      ...this.state,
+      switch: {
+        ...this.state.switch,
+        value: !this.state.switch.value,
+      }
+    })
+    this.forceUpdate()
+  }
+
   constructUrl(obj, id, time){
     const startDate = this.state.events.filter((event)=>event.id===id)[0].startDate
     const defaultArrivalTime = new Date(startDate).getTime()/1000
 
-    let arrival
+    let departure
 
     const { originAddresses, destinationAddresses } = obj
     const url = 'https://maps.googleapis.com/maps/api/distancematrix/json?'
@@ -122,13 +187,14 @@ export default class App extends React.Component {
     const destinationStr = this.parseAddresses(destinationAddresses, 1)
     if(time){
       const usrSpecifiedArrival = new Date(time).getTime()/1000
-      arrival = `arrival_time=${usrSpecifiedArrival}`
+      departure = `arrival_time=${usrSpecifiedArrival}`
     }else{
-      arrival = `arrival_time=${defaultArrivalTime}`
+      departure = `arrival_time=${defaultArrivalTime}`
     }
     const key = `key=${this.state.api}`
+    const trafficModel = `traffic_model=pessimistic`
 
-    const result = url + '&' + originStr + '&' + destinationStr + '&' + key + '&' + arrival
+    const result = url + '&' + originStr + '&' + destinationStr + '&' + key + '&' + departure
     console.log(result)
     return result
   }
@@ -160,14 +226,74 @@ export default class App extends React.Component {
     this.getEvents()
   }
 
+  openCloseOptionsModal(){
+    this.setState({
+      ...this.state,
+      optionsModal: {
+        ...this.state.optionsModal,
+        visible: !this.state.optionsModal.visible
+      }
+    })
+  }
+  openCloseHomeAutocompleteModal(){
+    this.setState({
+      optionsModal:{
+        visible: !this.state.optionsModal.visible,
+        homeAutocomplete: {
+          visible: !this.state.optionsModal.homeAutocomplete.visible
+        }
+      }
+    })
+  }
+
+  setHome=(e)=>{
+    this.setState({
+      ...this.state,
+      home: e,
+      optionsModal:{
+        visible: !this.state.optionsModal.visible,
+        homeAutocomplete: {
+          visible: !this.state.optionsModal.homeAutocomplete.visible
+        }
+      }
+    })
+    this.storeHome(e)
+  }
+
+  // Async Storage
+  async storeHome (value) {
+    try {
+      await AsyncStorage.setItem('HOME', value);
+    } catch (error) {
+      // Error saving data
+    }
+  }
+  async retrieveHome(){
+    try {
+      const value = await AsyncStorage.getItem('HOME');
+      if (value !== null) {
+        // We have data!!
+        console.log(value)
+        this.setState({
+          ...this.state,
+          home: value
+        })
+      }
+    } catch (error) {
+      // Error retrieving data
+    }
+  }
+
   render() {
     return (
       <Root>
         <Container>
-          <HeaderBar singleCardView={this.state.singleCardView} back={this.back.bind(this)} />
+          <HeaderBar singleCardView={this.state.singleCardView} back={this.back.bind(this)} options={this.openCloseOptionsModal.bind(this)} />
           {this.state.singleCardView
-            ? <SingleCardView saveChanges={this.saveChanges.bind(this)} back={this.back.bind(this)} apiCall={this.makeGMatrixAPICall.bind(this)} card={this.state.singleCardView}/>
+            ? <SingleCardView switch={this.state.switch} flickSwitch={this.flickSwitch.bind(this)} saveChanges={this.saveChanges.bind(this)} back={this.back.bind(this)} apiCall={this.makeGMatrixAPICall.bind(this)} card={this.state.singleCardView}/>
             : <CalendarList events={this.state.events} weekof={this.state.weekViewed} setSingleCardView={this.setSingleCard.bind(this)} /> }
+            <Overview optionsModal={this.state.optionsModal} handleChangeText={this.setHome.bind(this)} editHome={this.openCloseHomeAutocompleteModal.bind(this)} home={this.state.home} accept={this.openCloseOptionsModal.bind(this)} />
+            <GoogleAddressAutocomplete locationModal={this.state.optionsModal.homeAutocomplete} setLocation={this.setHome.bind(this)} defaultReturn={this.state.home} closeModal={this.openCloseHomeAutocompleteModal.bind(this)} />
         </Container>
       </Root>
     );

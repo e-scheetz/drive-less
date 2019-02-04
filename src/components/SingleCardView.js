@@ -1,23 +1,16 @@
 import React, { Component } from 'react'
-import { DatePickerIOS, Modal, TouchableHighlight, View, Alert } from 'react-native'
-import { List, ListItem, ListView, Footer, Item, Subtitle, Form, Button, Label, Input, DatePicker, Left, Right, Text, Body, Icon, Textarea, Grid, Row, Col, Title, Content } from 'native-base';
-import Expo, { Constants, PROVIDER_GOOGLE, Location, Marker } from 'expo'
-import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
-import MapView, { AnimatedRegion, Animated } from 'react-native-maps'
+import { View } from 'react-native'
+import { Item, Form, Button, Label, Input, Left, Right, Text, Body, Icon, Textarea, Content } from 'native-base';
+import { Constants, Location } from 'expo'
+import { AnimatedRegion } from 'react-native-maps'
 
 import FooterBar from './FooterBar.js'
-
-const homePlace = {
-  description: 'Home',
-  geometry: { location: { lat: 48.8152937, lng: 2.4597668 } },
-};
-const workPlace = {
-  description: 'Work',
-  geometry: { location: { lat: 48.8496818, lng: 2.2940881 } },
-};
+import DateTimePicker from './modals/DateTimePicker.js'
+import GoogleAddressAutocomplete from './modals/GoogleAddressAutocomplete.js'
+import TrafficMonitor from './modals/TrafficMonitor.js'
 
 
-class singleCardView extends Component {
+class SingleCardView extends Component {
   constructor(props) {
     super(props)
     this.state = {
@@ -41,7 +34,10 @@ class singleCardView extends Component {
         date: '',
         modifying: ''
       },
-      locationModal: false,
+      locationModal: {
+        visible: false,
+        address: ''
+      },
       coordinate: {
         latitude: 40.016759,
         longitude: -105.28172,
@@ -54,8 +50,10 @@ class singleCardView extends Component {
         latitudeDelta: 0.0922,
         longitudeDelta: 0.0421
       }),
-      optModal: false,
-      trafficList: [],
+      optModal: {
+        visible: false,
+        trafficList: []
+      }
     }
   }
 
@@ -128,7 +126,10 @@ class singleCardView extends Component {
     this.setState({
       ...this.state,
       location: e,
-      locationModal: true
+      locationModal: {
+        visible: true,
+        address: e
+      }
     })
   }
 
@@ -143,7 +144,10 @@ class singleCardView extends Component {
     this.setState({
       ...this.state,
       location: e,
-      locationModal: false
+      locationModal: {
+        visible: false,
+        address: ''
+      }
     })
     this.gMatrixFetch(e)
     this.optimize(e)
@@ -152,21 +156,30 @@ class singleCardView extends Component {
   onLocationPressHandler(){
     this.setState({
       ...this.state,
-      locationModal: true
+      locationModal: {
+        visible: true,
+        address: ''
+      }
     })
   }
 
   closeLocModal(){
     this.setState({
       ...this.state,
-      locationModal: false
+      locationModal: {
+        visible: false,
+        address: ''
+      }
     })
   }
 
   closeOptModal(){
     this.setState({
       ...this.state,
-      locationModal: false
+      locationModal: {
+        visible: false,
+        address: ''
+      }
     })
   }
 
@@ -198,22 +211,28 @@ class singleCardView extends Component {
   openOptModal(){
     this.setState({
       ...this.state,
-      optModal: !this.state.optModal
+      optModal: {
+        ...this.state.optModal,
+        visible: !this.state.optModal.visible
+      }
     })
   }
 
   async optimize(destination){
-    let newDateObj = new Date(new Date(this.state.startDate).getTime() - 4*30*60000)
+    let newDateObj = new Date(new Date(this.state.startDate).getTime() - 3*30*60000)
     console.log(newDateObj)
     let dateList = []
-    for(let i = 0; i < 9; i++){
+    for(let i = 0; i < 7; i++){
       dateList.push(new Date(newDateObj))
       newDateObj = new Date(newDateObj.getTime() + 30*60000)
     }
     const newState = await this.recursiveAPIFetch(dateList, destination)
     this.setState({
       ...this.state,
-      trafficList: newState
+      optModal: {
+        ...this.state.optModal,
+        trafficList: newState
+      }
     })
   }
   async recursiveAPIFetch(dateList, destination, result = []){
@@ -271,7 +290,10 @@ class singleCardView extends Component {
     this.setState({
       ...this.state,
       notes: newNote,
-      optModal: false
+      optModal: {
+        ...this.state.optModal,
+        visible: false
+      }
     })
   }
 
@@ -320,7 +342,7 @@ class singleCardView extends Component {
               <Label>Notes</Label>
               <Textarea onChangeText={this.onNotesChangeHandler} style={{width: 325}} rowSpan={5} value={this.state.notes}/>
             </Item>
-            <Item style={{marginTop: 250}}>
+            <Item style={{marginTop: 185}}>
               <Left>
                 <Button onPress={this.props.back}><Text>Cancel</Text></Button>
               </Left>
@@ -330,146 +352,11 @@ class singleCardView extends Component {
             </Item>
           </Form>
           {/* Modal for date-time rotating selector */}
-          <Modal
-            animationType="slide"
-            transparent={true}
-            visible={this.state.dateTimeModal.visible}
-            onRequestClose={() => {
-              Alert.alert('Modal has been closed.');
-            }}>
-            <View style={{marginTop: 425}}>
-              <View>
-                <DatePickerIOS
-                  date={new Date(this.state.dateTimeModal.date) || new Date()}
-                  onDateChange={this.dateChange.bind(this)}
-                  />
-                <Body>
-                  <Button small rounded onPress={() => {this.closeModal();}}><Text>Accept</Text></Button>
-                </Body>
-              </View>
-            </View>
-          </Modal>
+          <DateTimePicker dateTimeModal={this.state.dateTimeModal} dateChange={this.dateChange.bind(this)} closeModal={this.closeModal.bind(this)} />
           {/* Modal for selecting places */}
-          <Modal
-            style={{ flex: 1 }}
-            animationType="slide"
-            transparent={false}
-            visible={this.state.locationModal}
-            onRequestClose={() => {
-              Alert.alert('Modal has been closed.');
-            }}>
-              {/* Expo.Constants.manifest.ios.config.googleMapsApiKey */}
-              <View style={{ paddingTop: Constants.statusBarHeight, flex: 1 }}>
-                <GooglePlacesAutocomplete
-                  provider={PROVIDER_GOOGLE}
-                  placeholder="Search"
-                  minLength={2} // minimum length of text to search
-                  autoFocus={true}
-                  returnKeyType={'search'} // Can be left out for default return key https://facebook.github.io/react-native/docs/textinput.html#returnkeytype
-                  listViewDisplayed={true} // true/false/undefined
-                  fetchDetails={false}
-                  renderDescription={row => row.description} // custom description render
-                  onPress={(data, details = null) => {
-                    // console.log(data);
-                    // console.log(details)
-                    this.setLocation(data.description)
-                    // this.getCoordinates(data.description)
-                  }}
-                  getDefaultValue={() => {
-                    return this.state.location; // text input default value
-                  }}
-                  query={{
-                    // available options: https://developers.google.com/places/web-service/autocomplete
-                    key: api,
-                    language: 'en', // language of the results
-                    types: 'geocode', // default: 'geocode'
-                  }}
-                  styles={{
-                    description: {
-                      fontWeight: 'bold',
-                    },
-                    predefinedPlacesDescription: {
-                      color: '#1faadb',
-                    },
-                    listView: {
-                      paddingTop: Constants.statusBarHeight,
-                      position: "absolute",
-                      height: deviceHeight+Constants.statusBarHeight,
-                      width: deviceWidth
-                    },
-                  }}
-                  currentLocation={false} // Will add a 'Current location' button at the top of the predefined places list
-                  currentLocationLabel="Current location"
-                  nearbyPlacesAPI="GooglePlacesSearch" // Which API to use: GoogleReverseGeocoding or GooglePlacesSearch
-                  GoogleReverseGeocodingQuery={{
-                    // available options for GoogleReverseGeocoding API : https://developers.google.com/maps/documentation/geocoding/intro
-                  }}
-                  GooglePlacesSearchQuery={{
-                    // available options for GooglePlacesSearch API : https://developers.google.com/places/web-service/search
-                    rankby: 'distance',
-                    types: 'food',
-                  }}
-                  filterReverseGeocodingByTypes={[
-                    'locality',
-                    'administrative_area_level_3',
-                  ]} // filter the reverse geocoding results by types - ['locality', 'administrative_area_level_3'] if you want to display only cities
-                  // predefinedPlaces={[homePlace, workPlace]}
-                  debounce={200}
-                />
-              </View>
-              {/* <MapView 
-                initialRegion={this.state.coordinate}
-                style={{flex: 1, height: 300, marginTop: 300}}
-              >
-                <MapView.Marker.Animated
-                  ref={marker => { this.marker = marker }}
-                  coordinate={this.state.animatedRegion}
-                />
-              </MapView> */}
-              <Footer>
-                <Left></Left>
-                <Body></Body>
-                <Right>
-                  <Button large style={{align: 'center'}} transparent onPress={() => {this.closeLocModal();}}><Text>Accept</Text></Button>
-                </Right>
-              </Footer>
-          </Modal>
-          <Modal
-            style={{ flex: 1 }}
-            animationType="slide"
-            transparent={false}
-            visible={this.state.optModal}
-            onRequestClose={() => {
-              Alert.alert('Modal has been closed.');
-            }}>
-              <List style={{paddingTop: Constants.statusBarHeight, flex: 1 }}>
-                {this.state.trafficList.map((time, idx)=>(
-                  <ListItem button onPress={()=>this.optChanges(time.depart)} style={{height: 80}} key={idx}>
-                    <Left>
-                      <Grid>
-                        <Row>
-                          <Title>Depart at {this.getTimeString(time.depart)}</Title>
-                        </Row>
-                        <Row>
-                          <Title>Arrive at {this.getTimeString(new Date(time.depart).getTime() + time.duration*1000)}</Title>
-                        </Row>
-                      </Grid>
-                      
-                    </Left>
-                    <Right>
-                      <Subtitle>Time in traffic: {this.getDurationString(time.duration)}</Subtitle>
-                    </Right>
-                  </ListItem>
-                ))}
-              </List>
-              <Footer>
-                <Left></Left>
-                <Body></Body>
-                <Right>
-                  <Button large style={{align: 'center'}} transparent onPress={() => {this.openOptModal();}}><Text>Accept</Text></Button>
-                </Right>
-              </Footer>
-          </Modal>
+          <GoogleAddressAutocomplete locationModal={this.state.locationModal} setLocation={this.setLocation.bind(this)} defaultReturn={this.state.location} closeModal={this.closeLocModal.bind(this)} />
+          {/* Modal for selecting departure time based off traffic */}
+          <TrafficMonitor optModal={this.state.optModal} getTimeString={this.getTimeString.bind(this)} getDurationString={this.getDurationString.bind(this)} switch={this.props.switch} flickSwitch={this.props.flickSwitch.bind(this)} optChanges={this.optChanges.bind(this)} accept={this.openOptModal.bind(this)} />
         </Content>
         <FooterBar duration={this.getDurationString(this.state.driveDuration)} open={this.openOptModal.bind(this)} />
       </View>
@@ -478,4 +365,4 @@ class singleCardView extends Component {
   }
 }
 
-export default singleCardView
+export default SingleCardView
