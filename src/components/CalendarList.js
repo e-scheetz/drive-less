@@ -1,5 +1,7 @@
 import React, { Component } from 'react'
-import { View, Content, List, ListItem, Row, Text, Left, Right, Icon, Title, Subtitle, Card, Button } from 'native-base';
+import { View, Content, List, ListItem, Row, Text, Left, Right, Icon, Title, Subtitle, Card, Button, Grid } from 'native-base';
+
+import CalendarListItem from './CalendarListItem'
 
 
 class CalendarList extends Component {
@@ -8,45 +10,39 @@ class CalendarList extends Component {
     let output = new Date(date)
     return output.toDateString()
   }
+  getTimeString(date){
+    let output = new Date(date)
+    return output.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true })
+  }
   checkLocation(loc){
     if(loc === ""){
-      return "No location entered... :("
+      return "No location entered."
     }else{
       return loc
     }
   }
 
   render() {
+    const styles = {
+      titleStyle: {
+        fontFamily: 'PingFangTC-Thin',
+        shadowColor: 'black',
+        fontSize: 30,
+        textAlign: 'center'
+      }
+    }
     return (
-      <Content>
+      <Content style={{flex: 1}}>
         <List>
-          <Card>
-            <Title>Week of {this.getDateString(this.props.weekof.begin)}</Title>
-          </Card>
+          <ListItem style={{alignItems: 'center', textAlign: 'center'}}>
+            <Grid style={{alignItems: 'center', textAlign: 'center'}}>
+              <Row style={{alignItems: 'center', textAlign: 'center'}}>
+                <Text style={styles.titleStyle}>Week of {this.getDateString(this.props.weekof.begin)}</Text>
+              </Row>
+            </Grid>
+          </ListItem>
           {this.props.events.map((event, idx)=>(
-            <Card key={idx}>
-              <ListItem>
-                <Title>{event.title}</Title>
-              </ListItem>
-              <ListItem>
-                <Subtitle>{this.checkLocation(event.location)}</Subtitle>
-              </ListItem>
-              <ListItem>
-                <Left>
-                  <Row>
-                    <Subtitle>Start: {this.getDateString(event.startDate)}</Subtitle>
-                  </Row>
-                  <Row>
-                    <Subtitle>End: {this.getDateString(event.endDate)}</Subtitle>
-                  </Row>
-                </Left>
-                <Right>
-                  <Button onPress={()=>this.props.setSingleCardView(event)} transparent>
-                    <Icon name="arrow-forward" />
-                  </Button>
-                </Right>
-              </ListItem>
-            </Card>
+            <CalendarListItem demo={this.props.demo} key={idx} idx={idx} event={event} checkLocation={this.checkLocation.bind(this)} getDateString={this.getDateString.bind(this)} getTimeString={this.getTimeString.bind(this)} setSingleCardView={this.props.setSingleCardView} />
           ))}
         </List>
       </Content>

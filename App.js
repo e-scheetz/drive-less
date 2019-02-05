@@ -1,5 +1,5 @@
 import React from 'react';
-import { Permissions, Calendar, Notifications, Location } from 'expo'
+import { Permissions, Calendar, Notifications, Location, Constants } from 'expo'
 import { StyleSheet, Text, View, AsyncStorage } from 'react-native';
 import { Root, Container, Header, Content, Footer } from 'native-base'
 
@@ -31,6 +31,18 @@ export default class App extends React.Component {
       switch: {
         status: false,
         value: false,
+      },
+      demoData: {
+        listEstimates: [0,30,42,120,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        timeList: [
+          {depart: 'Wed Feb 06 2019 16:42:00 GMT-0700 (MST)', duration: 1980},
+          {depart: 'Wed Feb 06 2019 16:56:00 GMT-0700 (MST)', duration: 2040},
+          {depart: 'Wed Feb 06 2019 17:08:00 GMT-0700 (MST)', duration: 2100},
+          {depart: 'Wed Feb 06 2019 17:18:00 GMT-0700 (MST)', duration: 2520},
+          {depart: 'Wed Feb 06 2019 17:31:00 GMT-0700 (MST)', duration: 2640},
+          {depart: 'Wed Feb 06 2019 17:46:00 GMT-0700 (MST)', duration: 2640},
+          {depart: 'Wed Feb 06 2019 18:01:00 GMT-0700 (MST)', duration: 2640},
+        ]
       }
     }
   }
@@ -41,6 +53,7 @@ export default class App extends React.Component {
     await this.getCalIds()
     await this.getEvents()
     await this.retrieveHome()
+    console.log(Constants.systemFonts)
   }
 
   async reqPerms(){
@@ -75,16 +88,35 @@ export default class App extends React.Component {
     let end = new Date(day)
     end.setDate(end.getDate() + 7)
     const events = await Calendar.getEventsAsync(this.state.calendarsList, day, end)
+    const filteredEvents = this.demo(events)
     this.setState({
         ...this.state,
-      events: events,
+      events: filteredEvents,
       weekViewed: {begin:day,end:end}
     })
+  }
+  // this code filters out events that have already passed and works from a default day until the demo
+  demo(events){
+    const today = new Date().getTime()
+    const demoThreshold = new Date("2019-02-09T02:00:00.000Z").getTime()
+    const isDemoPeriod = demoThreshold - today
+
+    const demoFilterTime = new Date("2019-02-06T03:30:00.000Z")
+
+    let newState
+
+    if(isDemoPeriod > 0){
+      newState = events.filter((event)=>((new Date(event.endDate).getTime() - demoFilterTime) > 0))
+    }else{
+      newState = events.filter((event)=>((new Date(event.startDate).getTime() - today) > 0))
+    }
+    return newState
   }
 
   // added a function 'back' that returns the app to the main 'week of' screen
   back(){
     this.setSingleCard()
+    this.getEvents()
   }
 
   setSingleCard(calEvent){
@@ -222,8 +254,6 @@ export default class App extends React.Component {
   saveChanges(obj){
     const { id, details, recurringEventOptions } = obj
     Calendar.updateEventAsync(id, details, recurringEventOptions)
-    this.back()
-    this.getEvents()
   }
 
   openCloseOptionsModal(){
@@ -286,12 +316,12 @@ export default class App extends React.Component {
 
   render() {
     return (
-      <Root>
-        <Container>
+      <Root style={{flex: 1}}>
+        <Container style={{flex: 1}}>
           <HeaderBar singleCardView={this.state.singleCardView} back={this.back.bind(this)} options={this.openCloseOptionsModal.bind(this)} />
           {this.state.singleCardView
-            ? <SingleCardView switch={this.state.switch} flickSwitch={this.flickSwitch.bind(this)} saveChanges={this.saveChanges.bind(this)} back={this.back.bind(this)} apiCall={this.makeGMatrixAPICall.bind(this)} card={this.state.singleCardView}/>
-            : <CalendarList events={this.state.events} weekof={this.state.weekViewed} setSingleCardView={this.setSingleCard.bind(this)} /> }
+            ? <SingleCardView demo={this.state.demoData} switch={this.state.switch} flickSwitch={this.flickSwitch.bind(this)} saveChanges={this.saveChanges.bind(this)} back={this.back.bind(this)} apiCall={this.makeGMatrixAPICall.bind(this)} card={this.state.singleCardView}/>
+            : <CalendarList demo={this.state.demoData} events={this.state.events} weekof={this.state.weekViewed} setSingleCardView={this.setSingleCard.bind(this)} /> }
             <Overview optionsModal={this.state.optionsModal} handleChangeText={this.setHome.bind(this)} editHome={this.openCloseHomeAutocompleteModal.bind(this)} home={this.state.home} accept={this.openCloseOptionsModal.bind(this)} />
             <GoogleAddressAutocomplete locationModal={this.state.optionsModal.homeAutocomplete} setLocation={this.setHome.bind(this)} defaultReturn={this.state.home} closeModal={this.openCloseHomeAutocompleteModal.bind(this)} />
         </Container>

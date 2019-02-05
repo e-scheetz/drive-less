@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import { View } from 'react-native'
-import { Item, Form, Button, Label, Input, Left, Right, Text, Body, Icon, Textarea, Content } from 'native-base';
+import { Item, Form, Button, Label, Input, Left, Right, Text, Body, Icon, Textarea, Content, Grid, Row } from 'native-base';
 import { Constants, Location } from 'expo'
 import { AnimatedRegion } from 'react-native-maps'
 
@@ -8,6 +8,7 @@ import FooterBar from './FooterBar.js'
 import DateTimePicker from './modals/DateTimePicker.js'
 import GoogleAddressAutocomplete from './modals/GoogleAddressAutocomplete.js'
 import TrafficMonitor from './modals/TrafficMonitor.js'
+import { black } from 'ansi-colors';
 
 
 class SingleCardView extends Component {
@@ -56,6 +57,19 @@ class SingleCardView extends Component {
       }
     }
   }
+  // load dummy data
+  async componentDidMount() {
+    if(this.state.id === "CB8AAB9B-741A-4215-A528-38678E0B5076" || this.state.id){
+      this.setState({
+        ...this.state,
+        driveDuration: this.props.demo.timeList[3].duration,
+        optModal: {
+          ...this.state.optModal,
+          trafficList: this.props.demo.timeList
+        }
+      })
+    }
+  }
 
 
   getDateString(date){
@@ -68,7 +82,7 @@ class SingleCardView extends Component {
   }
   checkLocation(loc){
     if(loc === ""){
-      return "No location entered... :("
+      return "No location entered."
     }else{
       return loc
     }
@@ -93,6 +107,7 @@ class SingleCardView extends Component {
         modifying: ''
       }
     })
+    this.saveChanges()
   }
   openModalStart(){
     this.setState({
@@ -171,6 +186,7 @@ class SingleCardView extends Component {
         address: ''
       }
     })
+    this.saveChanges()
   }
 
   closeOptModal(){
@@ -285,8 +301,12 @@ class SingleCardView extends Component {
     this.props.saveChanges({id: this.state.id, details: details, recurringEventOptions: recurringEventOptions})
   }
 
-  optChanges(departDate){
+  async optChanges(departDate){
     const newNote = `Depart by ${this.getDateString(departDate)} at ${this.getTimeString(departDate)}\n\n${this.state.notes}`
+
+    // NOTE: added for demo
+    await this.setLocation('1023 Walnut Street, Boulder, CO, US, 80302')
+
     this.setState({
       ...this.state,
       notes: newNote,
@@ -304,52 +324,107 @@ class SingleCardView extends Component {
     const windowSize = require('Dimensions').get('window')
     const deviceWidth = windowSize.width;
     const deviceHeight = windowSize.height;
+
+    const styles = {
+      titleStyle: {
+        fontFamily: 'PingFangTC-Thin',
+        shadowColor: 'black',
+        fontSize: 24,
+        alignItems: 'center'
+      },
+      inputText: {
+        fontFamily: 'PingFangTC-Ultralight'
+      },
+      inputDateText: {
+        fontFamily: 'PingFangTC-Ultralight',
+        paddingTop: 10,
+        height: 50,
+      },
+      labelText: {
+        fontFamily: 'PingFangTC-Light',
+        paddingLeft: 10,
+        paddingTop: 10,
+        color: '#000000',
+      },
+      labelDateText: {
+        fontFamily: 'PingFangTC-Light',
+        paddingLeft: 10,
+        paddingTop: 10,
+        color: '#000000',
+      },
+      textArea: {
+        fontFamily: 'PingFangTC-Ultralight'
+      }
+    }
+
     return (
       <View style={{flex: 1}}>
         <Content>
           <Form>
             <Item floatingLabel>
-              <Label>Title</Label>
-              <Input onChangeText={this.onTitleChangeHandler} value={this.state.title} />
+              <Label style={styles.labelText}>Title</Label>
+              <Input onBlur={()=>this.saveChanges()} style={styles.inputText} onChangeText={this.onTitleChangeHandler} value={this.state.title} />
             </Item>
             <Item floatingLabel style={{height: 60}} onPress={()=>this.onLocationPressHandler()} >
-              <Label>Location</Label>
-              <Input onChangeText={this.onLocationChangeHandler} value={this.state.location} />
+              <Label style={styles.labelText}>Location</Label>
+              <Input onBlur={()=>this.saveChanges()} style={styles.inputText} onChangeText={this.onLocationChangeHandler} value={this.state.location} />
             </Item>
-            <Item style={{height: 60}}>
-              <Left>
-                <Text>{this.getDateString(this.state.startDate)}</Text>
-              </Left>
-              <Body>
-                <Text>{this.getTimeString(this.state.startDate)}</Text>
-              </Body>
-              <Right>
-                <Button transparent onPress={()=>this.openModalStart()}><Icon name="ios-open"></Icon></Button>
-              </Right>
+            <Item style={{height: 70}}>
+              <Grid>
+                <Row>
+                  <Label style={styles.labelDateText}>Start Date</Label>
+                </Row>
+                <Row style={{height: 10}}></Row>
+                <Row>
+                  <Left>
+                    <Text style={styles.inputDateText}>{this.getDateString(this.state.startDate)}</Text>
+                  </Left>
+                  <Body>
+                    <Text style={styles.inputDateText}>{this.getTimeString(this.state.startDate)}</Text>
+                  </Body>
+                  <Right>
+                    <Button transparent onPress={()=>this.openModalStart()}><Icon name="ios-open"></Icon></Button>
+                  </Right>
+                </Row>
+              </Grid>
             </Item>
-            <Item style={{height: 60}} button onPress={()=>this.openModalEnd}>
-              <Left>
-                <Text>{this.getDateString(this.state.endDate)}</Text>
-              </Left>
-              <Body>
-                <Text>{this.getTimeString(this.state.endDate)}</Text>
-              </Body>
-              <Right>
-              <Button transparent onPress={()=>this.openModalEnd()}><Icon name="ios-open"></Icon></Button>
-              </Right>
+            <Item style={{height: 70}} button onPress={()=>this.openModalEnd}>
+              <Grid>
+                <Row>
+                  <Label style={styles.labelDateText}>End Date</Label>
+                </Row>
+                <Row style={{height: 10}}></Row>
+                <Row>
+                  <Left>
+                    <Text style={styles.inputDateText}>{this.getDateString(this.state.endDate)}</Text>
+                  </Left>
+                  <Body>
+                    <Text style={styles.inputDateText}>{this.getTimeString(this.state.endDate)}</Text>
+                  </Body>
+                  <Right>
+                  <Button transparent onPress={()=>this.openModalEnd()}><Icon name="ios-open"></Icon></Button>
+                  </Right>
+                </Row>
+              </Grid>
             </Item>
             <Item>
-              <Label>Notes</Label>
-              <Textarea onChangeText={this.onNotesChangeHandler} style={{width: 325}} rowSpan={5} value={this.state.notes}/>
+              <Grid>
+                <Row>
+                  <Label style={styles.labelText}>Notes</Label>
+                </Row>
+                <Row style={{paddingLeft: 0}}>
+                  <Textarea onBlur={()=>this.saveChanges()} style={styles.textArea} onChangeText={this.onNotesChangeHandler} style={{width: 325}} rowSpan={5} value={this.state.notes}/>
+                </Row>
+              </Grid>
             </Item>
-            <Item style={{marginTop: 185}}>
+            {/* <Item style={{marginTop: 185}}>
               <Left>
                 <Button onPress={this.props.back}><Text>Cancel</Text></Button>
               </Left>
               <Right>
                 <Button onPress={()=>this.saveChanges()}><Text>Save</Text></Button>
               </Right>
-            </Item>
+            </Item> */}
           </Form>
           {/* Modal for date-time rotating selector */}
           <DateTimePicker dateTimeModal={this.state.dateTimeModal} dateChange={this.dateChange.bind(this)} closeModal={this.closeModal.bind(this)} />

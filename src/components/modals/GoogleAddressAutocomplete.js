@@ -91,8 +91,8 @@ export default class GoogleAddressAutocomplete extends Component{
         <Footer>
           <Left></Left>
           <Body></Body>
-          <Right>
-            <Button large style={{align: 'center'}} transparent onPress={() => {this.props.closeModal();}}><Text>Accept</Text></Button>
+          <Right style={{alignItems: 'center'}}>
+            <Button large transparent onPress={() => {this.props.closeModal();}}><Text>Accept</Text></Button>
           </Right>
         </Footer>
       </Modal>
