@@ -154,7 +154,7 @@ export default class Overview extends Component{
                         <Text style={styles.technologies.title}>Technologies used:</Text>
                       </Row>
                       <Row>
-                        <Text style={styles.technologies.subtitle}>React Native, NativeBase.io, Google Places API, Google Distance Matrix API</Text>
+                        <Text style={styles.technologies.subtitle}>React Native, Expo, NativeBase.io, Google Places API, Google Distance Matrix API</Text>
                       </Row>
                     </Col>
                   </Row>
