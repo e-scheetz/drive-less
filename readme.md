@@ -1,5 +1,5 @@
 # Drive Less
-### *[~Video Demo~](https://drive.google.com/open?id=14KKw43fZn2rYURZgpifnEibeqVCP45OE)*
+### *[Video Demo](https://drive.google.com/open?id=14KKw43fZn2rYURZgpifnEibeqVCP45OE)*
 
 Drive Less was envisioned as an app that would assist its users in planning their weekly schedule around traffic. Similar tools do exist, but awareness of those tools is limited due to improvable market placement. So, using traffic prediction as a means to see at a glance how much time you schedule has you on the road was the baseline desire.
 
